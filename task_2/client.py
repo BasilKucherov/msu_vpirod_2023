@@ -23,7 +23,11 @@ def create_request():
 
     command_str = input('[C] Type command: ')
 
-    request_message['action'] = 'command'  
+    if command_str == 'stop':
+        request_message['action'] = 'control'  
+    else:
+        request_message['action'] = 'command'  
+    
     request_message['command'] = command_str
       
     return request_message

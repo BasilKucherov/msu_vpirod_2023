@@ -1,6 +1,7 @@
 import pika
 import json
-import uuid
+import sys
+import re
 
 # RabbitMQ
 RABBITMQ_HOST = 'localhost'
@@ -29,6 +30,16 @@ channel.queue_declare(queue=RABBITMQ_QUEUE_CLIENT_TO_MANAGER)
 channel.queue_declare(queue=RABBITMQ_QUEUE_MANAGER_TO_COMMUNICATOR)
 
 # Helping functions
+def is_number(s):
+    # Define a regular expression pattern to match numbers
+    number_pattern = r'^[-+]?(\d+\.\d*|\.\d+|\d+)([eE][-+]?\d+)?$'
+    
+    # Use re.match to check if the entire string matches the pattern
+    if re.match(number_pattern, s):
+        return True
+    else:
+        return False
+
 def parse_command(command_str):
     global data
     global available_operators
@@ -51,7 +62,7 @@ def parse_command(command_str):
         print(f'[M] Wrong command format: unknown var \"{var_name}\"')
         return False
     
-    if not number_operand.isnumeric():
+    if not is_number(number_operand):
         print(f'[M] Wrong command format: number \"{number_operand}\" must numeric')
         return False
     
@@ -62,6 +73,7 @@ def parse_command(command_str):
     }
 
     return command_parsed
+
 
 def perform_command(command):
     global data
@@ -74,6 +86,7 @@ def perform_command(command):
         data[var_name] += number_operand
     if operator == 'mul':
         data[var_name] *= number_operand
+
 
 # callbacks
 def etl_callback(ch, method, properties, body):
@@ -115,6 +128,13 @@ def client_callback(ch, method, properties, body):
                 message_for_workers = {'action': 'command', 'command': parsed_command, 'command_id': commands_counter}
                 channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_MANAGER_TO_COMMUNICATOR, body=json.dumps(message_for_workers))
                 commands_counter += 1
+        elif message['action'] == 'control':
+            command = message['command']
+            print(f"[M] Got control message: {command}")
+
+            if command == 'stop':
+                channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_MANAGER_TO_COMMUNICATOR, body=json.dumps(message))
+                sys.exit(0)
 
 
 # consumers

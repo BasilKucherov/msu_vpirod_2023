@@ -41,8 +41,14 @@ def callback(ch, method, properties, body):
 
                 while len(commands_queue) > 0:
                     channel.basic_publish(exchange='workers', routing_key='', body=json.dumps(commands_queue.pop()))
+        elif message['action'] == 'control':
+            command = message['command']
 
-            
+            print(f"[COMM] got control command {message['command']}")
+            if command == 'stop':
+                channel.basic_publish(exchange='workers', routing_key='', body=json.dumps(message))
+                sys.exit(0)
+                            
 
 # consumers
 channel.basic_consume(queue=RABBITMQ_QUEUE_MANAGER_TO_COMMUNICATOR, on_message_callback=callback, auto_ack=True)

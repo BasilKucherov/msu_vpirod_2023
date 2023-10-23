@@ -79,6 +79,12 @@ def callback(ch, method, properties, body):
 
             if worker_state == WORKING_STATE:
                 process_commands_queue()
+        elif message['action'] == 'control':
+            command = message['command']
+            print(f"[W_{worker_id}] Got control message: {command}")
+
+            if command == 'stop':
+                sys.exit(0)
 
 # consumers
 channel.basic_consume(queue=worker_queue_name, on_message_callback=callback, auto_ack=True)

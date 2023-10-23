@@ -39,3 +39,5 @@ channel.basic_publish(exchange='workers', routing_key='', body=json.dumps(setup_
 channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_ETL_TO_MANAGER, body=json.dumps(setup_message))
 
 connection.close()
+
+sys.exit(0)
