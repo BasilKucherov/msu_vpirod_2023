@@ -2,24 +2,30 @@ import pika
 import json
 import sys
 import random
+import copy
 
 
 # RabbitMQ
 RABBITMQ_HOST = 'localhost'
 
 RABBITMQ_QUEUE_MANAGER_TO_COMMUNICATOR = 'manager_to_communicator'
-RABBITMQ_WORKERS_EXCHANGE = 'workers'
+RABBITMQ_QUEUE_TO_WORKER_PREFIX = 'to_worker_'
+
 
 # get args
 simulator_delay = int(sys.argv[1])
+workers_number = int(sys.argv[2])
 
 # connection to RabbitMQ
 connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
 channel = connection.channel()
-channel.exchange_declare(exchange=RABBITMQ_WORKERS_EXCHANGE, exchange_type='fanout')
 
 # Queues
 channel.queue_declare(queue=RABBITMQ_QUEUE_MANAGER_TO_COMMUNICATOR)
+
+for worker_id in range(workers_number):
+    channel.queue_declare(queue=f'{RABBITMQ_QUEUE_TO_WORKER_PREFIX}{worker_id}')
+
 
 # helping vars
 commands_queue = []
@@ -37,16 +43,21 @@ def callback(ch, method, properties, body):
 
             if len(commands_queue) >= simulator_delay:
                 print(f"[COMM] Reached max commands queue len: {len(commands_queue)}, shuffle and send")
-                random.shuffle(commands_queue)
+                for worker_id in range(workers_number):
+                    worker_commands_shuffle = list(range(len(commands_queue)))
+                    random.shuffle(worker_commands_shuffle)
 
-                while len(commands_queue) > 0:
-                    channel.basic_publish(exchange='workers', routing_key='', body=json.dumps(commands_queue.pop()))
+                    for command_id in worker_commands_shuffle:
+                        channel.basic_publish(exchange='', routing_key=f'{RABBITMQ_QUEUE_TO_WORKER_PREFIX}{worker_id}', body=json.dumps(commands_queue[command_id]))
+                
+                commands_queue = []
         elif message['action'] == 'control':
             command = message['command']
 
             print(f"[COMM] got control command {message['command']}")
             if command == 'stop':
-                channel.basic_publish(exchange='workers', routing_key='', body=json.dumps(message))
+                for worker_id in range(workers_number):
+                    channel.basic_publish(exchange='', routing_key=f'{RABBITMQ_QUEUE_TO_WORKER_PREFIX}{worker_id}', body=json.dumps(message))
                 sys.exit(0)
                             
 

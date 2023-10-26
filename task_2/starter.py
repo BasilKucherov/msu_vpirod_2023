@@ -23,7 +23,7 @@ if workers_number <= 0:
     sys.exit(1)
 
 
-simulator_delay_str = sys.argv[2]
+simulator_delay_str = sys.argv[3]
 
 if not simulator_delay_str.isnumeric():
     print("[S] Simulator_delay must be integer")
@@ -48,6 +48,6 @@ for i in range(workers_number):
     subprocess.Popen(['python3', worker, str(i), startup_settings_path])
 
 subprocess.Popen(['python3', manager, startup_settings_path])
-subprocess.Popen(['python3', communication_simulator, simulator_delay_str])
+subprocess.Popen(['python3', communication_simulator, simulator_delay_str, workers_number_str])
 
 sys.exit(0)

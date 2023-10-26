@@ -18,12 +18,10 @@ startup_setting_path = sys.argv[2]
 # connection to RabbitMQ
 connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
 channel = connection.channel()
-channel.exchange_declare(exchange=RABBITMQ_WORKERS_EXCHANGE, exchange_type='fanout')
 
 # Queues
 worker_queue_name = f'{RABBITMQ_QUEUE_TO_WORKER_PREFIX}{worker_id}'
 channel.queue_declare(queue=worker_queue_name)
-channel.queue_bind(exchange=RABBITMQ_WORKERS_EXCHANGE, queue=worker_queue_name)
 
 # helping vars
 data = {}
@@ -74,7 +72,7 @@ def callback(ch, method, properties, body):
         elif message['action'] == 'command':
             command = message['command']
             command_id = int(message['command_id'])
-            print(f"[W_{worker_id}] got command #{command_id}: {command}")
+            print(f"[W_{worker_id}] \t got command #{command_id}: {command}")
             commands_queue[command_id] = command
 
             if worker_state == WORKING_STATE:
