@@ -1,0 +1,12 @@
+{
+    "variables": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+    },
+    "leader_id": "random",
+    "ring_sequence": "descending",
+    "ping_delay_min": 3000,
+    "ping_delay_max": 3001,
+    "ping_timeout": 1000
+}
